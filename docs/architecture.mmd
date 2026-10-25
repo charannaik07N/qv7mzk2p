@@ -1,0 +1,10 @@
+flowchart LR
+    Trader[Trader / analyst] --> UI[React + Vite + Recharts]
+    UI -->|HTTPS JSON| API[FastAPI / Pydantic]
+    API --> Analytics[As-of selection + Pandas metrics]
+    Analytics --> Snapshot[Versioned CSV snapshots]
+    CLI[Acquisition CLI / token-protected refresh] --> Client[HTTPX retries / two concurrent requests]
+    Client -->|publication-time chunks| Elexon[Elexon FUELHH + WINDFOR streams]
+    Client --> Normalize[Separate normalization / quality counts]
+    Normalize --> Snapshot
+    Snapshot --> Provenance[Metadata / source OpenAPI / refresh time]

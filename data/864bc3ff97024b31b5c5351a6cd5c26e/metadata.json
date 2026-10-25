@@ -1,0 +1,23 @@
+{
+  "status": "cached",
+  "lastSuccessfulRefresh": "2026-10-25T03:27:48.746893+00:00",
+  "actualRecords": 1488,
+  "forecastRecords": 18104,
+  "actualQuality": {
+    "invalid": 0,
+    "duplicates": 33,
+    "conflicting_keys": 0
+  },
+  "forecastQuality": {
+    "invalid": 0,
+    "duplicates": 0,
+    "conflicting_keys": 0
+  },
+  "actualIntervals": 1488,
+  "forecastIntervals": 744,
+  "multipleVintageIntervals": 744,
+  "source": "Elexon FUELHH/WINDFOR stream",
+  "warning": "WINDFOR dataset publication queries are intended to retain superseded forecasts. Historical completeness is not guaranteed; metrics use only retained publications. Official OpenAPI publication queries were reviewed; January observation coverage has not been independently verified.",
+  "publicationWindow": "FUELHH Jan 1\u2013Feb 4; WINDFOR Dec 25\u2013Feb 2 (exclusive ends)",
+  "historyComplete": false
+}

@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: windmarket-api
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    healthCheckPath: /api/health
+    envVars:
+      - key: DATA_DIR
+        value: /data
+      - key: CORS_ORIGINS
+        sync: false
+      - key: ADMIN_TOKEN
+        sync: false
+      - key: DEFAULT_CUTOFF
+        value: "09:20"
+    disk:
+      name: windmarket-data
+      mountPath: /data
+      sizeGB: 1
