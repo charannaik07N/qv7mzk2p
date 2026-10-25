@@ -13,6 +13,7 @@ from pydantic import BaseModel, Field
 from .config import ADMIN_TOKEN, CORS_ORIGINS, DEFAULT_CUTOFF, HISTORY_WARNING, ENABLE_LOCAL_REFRESH, AUTO_REFRESH_ON_STARTUP
 from .analytics import evaluate, metrics, residual
 from .storage import Store
+from .startup_loader import load_snapshot_if_missing
 
 logging.basicConfig(level=logging.INFO)
 async def background_refresh():
@@ -23,6 +24,9 @@ async def background_refresh():
 
 @asynccontextmanager
 async def lifespan(app):
+    # Download pre-seeded snapshot from GitHub Release if DATA_DIR is empty
+    load_snapshot_if_missing()
+    store.load()  # Reload in case startup_loader just installed a snapshot
     if AUTO_REFRESH_ON_STARTUP and store.meta['status'] == 'unavailable':
         store.refresh_task = asyncio.create_task(background_refresh())
     yield

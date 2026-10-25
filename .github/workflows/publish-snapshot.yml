@@ -1,0 +1,88 @@
+name: Publish January 2026 Snapshot
+
+on:
+  # Run manually from GitHub Actions UI
+  workflow_dispatch:
+  # Also run when snapshot files are updated in the repo
+  push:
+    paths:
+      - 'data/**/actuals.csv'
+      - 'data/**/forecasts.csv'
+      - 'data/**/metadata.json'
+      - 'data/current.json'
+
+jobs:
+  publish-snapshot:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write  # needed to create/update releases
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Read current snapshot version
+        id: snapshot
+        run: |
+          VERSION=$(python3 -c "import json; print(json.load(open('data/current.json'))['version'])")
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Snapshot version: $VERSION"
+
+      - name: Validate snapshot files
+        run: |
+          python3 - <<'EOF'
+          import json, sys, pathlib
+          v = json.load(open("data/current.json"))["version"]
+          snap = pathlib.Path("data") / v
+          for f in ["actuals.csv", "forecasts.csv", "metadata.json"]:
+              p = snap / f
+              if not p.exists():
+                  print(f"MISSING: {p}", file=sys.stderr)
+                  sys.exit(1)
+              if p.stat().st_size == 0:
+                  print(f"EMPTY: {p}", file=sys.stderr)
+                  sys.exit(1)
+          import csv
+          actuals = list(csv.DictReader(open(snap / "actuals.csv")))
+          forecasts = list(csv.DictReader(open(snap / "forecasts.csv")))
+          print(f"actuals: {len(actuals)} rows, forecasts: {len(forecasts)} rows")
+          assert len(actuals) > 0, "actuals.csv is empty"
+          assert len(forecasts) > 0, "forecasts.csv is empty"
+          meta = json.load(open(snap / "metadata.json"))
+          print(f"status: {meta.get('status')}, actualIntervals: {meta.get('actualIntervals')}")
+          assert meta.get("status") == "cached", "metadata status is not 'cached'"
+          print("Validation passed.")
+          EOF
+
+      - name: Delete existing snapshot release (if any)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release delete windmarket-snapshot-jan2026 --yes 2>/dev/null || true
+
+      - name: Create GitHub Release with snapshot assets
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ steps.snapshot.outputs.version }}
+        run: |
+          SNAP_DIR="data/$VERSION"
+          gh release create windmarket-snapshot-jan2026 \
+            --title "WindMarket January 2026 Snapshot" \
+            --notes "Validated January 2026 wind generation snapshot (actuals + forecasts). Downloaded automatically by the backend on startup when no local data is present. Do NOT commit these files to the repository. See README for acquisition details." \
+            --latest \
+            "$SNAP_DIR/actuals.csv#actuals.csv" \
+            "$SNAP_DIR/forecasts.csv#forecasts.csv" \
+            "$SNAP_DIR/metadata.json#metadata.json"
+
+      - name: Output release asset URLs
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Release assets published:"
+          gh release view windmarket-snapshot-jan2026 --json assets \
+            --jq '.assets[] | "\(.name): \(.url)"'
+          echo ""
+          echo "Use these as SNAPSHOT_URL_* environment variables on Render."
+          echo "NOTE: For public repos, use the browser_download_url (direct download):"
+          gh release view windmarket-snapshot-jan2026 --json assets \
+            --jq '.assets[] | "SNAPSHOT_URL_\(.name | ascii_upcase | gsub("[.]"; "_")): \(.browser_download_url)"'

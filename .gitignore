@@ -18,11 +18,13 @@ dist/
 node_modules/
 npm-debug.log*
 
-# Downloaded datasets
-data/**/*.csv
+# Downloaded datasets — exclude raw large files
 data/**/*.parquet
 data/**/*.feather
 data/**/*.pkl
+# Snapshot CSVs and metadata are committed for the GitHub Actions release workflow
+# The workflow publishes them as Release assets so the backend can download them on startup
+# Do NOT add new large raw files here
 
 # OS
 .DS_Store
